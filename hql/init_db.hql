@@ -1,3 +1,11 @@
+-- 테이블이 있을 경우 내용 삭제
+DROP TABLE IF EXISTS cong_live;
+DROP TABLE IF EXISTS cong_prk;
+DROP TABLE IF EXISTS cong_road;
+DROP TABLE IF EXISTS cong_sub;
+DROP TABLE IF EXISTS cong_wtr;
+DROP TABLE IF EXISTS cong_fcst24wtr;
+
 
 -- 테이블이 없을 경우 테이블 생성
 -- 인구 정보
@@ -85,11 +93,4 @@ CREATE TABLE IF NOT EXISTS cong_fcst24wtr(
 	);
 
 
--- 테이블이 있을 경우 내용 삭제
-DELETE TABLES IF EXISTS cong_live;
-DELETE TABLES IF EXISTS cong_prk;
-DELETE TABLES IF EXISTS cong_road;
-DELETE TABLES IF EXISTS cong_sub;
-DELETE TABLES IF EXISTS cong_wtr;
-DELETE TABLES IF EXISTS cong_fcst24wtr;	
 
