@@ -46,22 +46,22 @@ default_args = {
     'retries': 0,
 }
 test_dag = DAG(
-    'Get_Place_Cong',
+    'tmp',
     default_args=default_args,
     schedule="* */30 * * *",
     user_defined_macros={'local_dt': lambda execution_date: execution_date.in_timezone(local_tz).strftime("%Y-%m-%d %H:%M:%S")},
 )
 
-check_execute_task = BashOperator(
-    task_id='check.execute',
-    bash_command="""
-        echo "date                            => `date`"
-        echo "logical_date                    => {{logical_date}}"
-        echo "execution_date                  => {{execution_date.strftime("%Y-%m-%d %H:%M:%S")}}"
-        echo "local_dt(execution_date)        => {{local_dt(execution_date)}}"
-        """,
-    dag = test_dag
-    )
+# check_execute_task = BashOperator(
+#     task_id='check.execute',
+#     bash_command="""
+#         echo "date                            => `date`"
+#         echo "logical_date                    => {{logical_date}}"
+#         echo "execution_date                  => {{execution_date.strftime("%Y-%m-%d %H:%M:%S")}}"
+#         echo "local_dt(execution_date)        => {{local_dt(execution_date)}}"
+#         """,
+#     dag = test_dag
+#     )
 
 def get_api_data(**context):
     DB_one={}
@@ -205,7 +205,7 @@ def get_api(place):
 # Define the BashOperator task
 init_tb = BashOperator(
     task_id='Init.DBtable',
-    bash_command=f"hive -f {HQL_PATH}/init_db.hql",
+    bash_command=f"hive -f {HQL_PATH}/init_table.hql",
     dag=test_dag
 )                       
 
@@ -213,27 +213,7 @@ get_data = PythonOperator(task_id='Get.api_data',
                     python_callable=get_api_data,
                     dag=test_dag)
 
-# t2 = PythonOperator(task_id='Get.api_관광특구',
-#                     python_callable=get_place_list,
-#                     op_args=place_cate['관광특구'],
-#                     dag=test_dag)
 
-
-# t3 = PythonOperator(task_id='Get.api_공원',
-#                     python_callable=get_place_list,
-#                     op_args=place_cate['공원'],
-#                     dag=test_dag)
-
-
-# t4 = PythonOperator(task_id='Get.api_발달상권',
-#                     python_callable=get_place_list,
-#                     op_args=place_cate['발달상권'],
-#                     dag=test_dag)
-
-# t5 = PythonOperator(task_id='Get.api_인구밀집지역',
-#                     python_callable=get_place_list,
-#                     op_args=place_cate['인구밀집지역'],
-#                     dag=test_dag)
 
 def print_data_size(**context):
     DB_one = context['task_instance'].xcom_pull(task_ids='Get.api_data')
@@ -262,27 +242,22 @@ def merge_data(**context):
 
     result_cong = {'live':cong_live,'road':cong_road,'wtr':cong_wtr,'prk':cong_prk,'fcst24wtr':cong_fcst24wtr,'sub':cong_sub}
     return result_cong
-    # df_live = pd.DataFrame(cong_live)
-    # df_road=pd.DataFrame(cong_road)
-    # df_wtr=pd.DataFrame(cong_wtr)
-    # df_prk=pd.DataFrame(cong_prk)
-    # df_fcst24wtr=pd.DataFrame(cong_fcst24wtr)
-    # df_sub=pd.DataFrame(cong_sub)
 
-    # result_df = {'live':df_live,'road':df_road,'wtr':df_wtr,'prk':df_prk,'fcst24wtr':df_fcst24wtr,'sub':df_sub}
-
-    # return result_df
 
 mergeDf = PythonOperator(task_id='Create.mergedDf',
                     python_callable=merge_data,
                     dag=test_dag,
                     trigger_rule='all_success')
 
-def insert_data_live(*op_args,**context):
+
+def insert_data_live(**context):
     result = context['task_instance'].xcom_pull(task_ids='Create.mergedDf')
-    cong_df = pd.DataFrame(result['prk'],columns=['AREA_NM', 'PRK_NM', 'PRK_CD', 'CPCTY', 'CUR_PRK_CNT', 'CUR_PRK_TIME', 'CUR_PRK_YN', 'PAY_YN', 'RATES', 'TIME_RATES', 'ADD_RATES', 'ADD_TIME_RATES', 'ADDRESS', 'ROAD_ADDR', 'LNG', 'LAT'])
-    hh = HiveCliHook()
-    hh.load_df(df=cong_df,table='cong_prk',
+    print(result['live'])
+    
+    cong_df = pd.DataFrame(result['live'],columns=['AREA_NM', 'AREA_CONGEST_LVL', 'AREA_CONGEST_MSG', 'AREA_PPLTN_MIN', 'AREA_PPLTN_MAX', 'PPLTN_TIME'])
+    print(cong_df)
+    hh = HiveCliHook(hive_cli_conn_id='hive_cli_connect')
+    hh.load_df(df=cong_df,table='cong_live',
                field_dict={
                             'AREA_NM' : 'STRING',
                             'AREA_CONGEST_LVL' :'STRING',
@@ -290,7 +265,31 @@ def insert_data_live(*op_args,**context):
                             'AREA_PPLTN_MIN' :'INT',
                             'AREA_PPLTN_MAX' :'INT',
                             'PPLTN_TIME' :'TIMESTAMP'
-                            })
+                        })
+
+# def insert_data_prk(*op_args,**context):
+#     result = context['task_instance'].xcom_pull(task_ids='Create.mergedDf')
+#     cong_df = pd.DataFrame(result['prk'],columns=['AREA_NM', 'PRK_NM', 'PRK_CD', 'CPCTY', 'CUR_PRK_CNT', 'CUR_PRK_TIME', 'CUR_PRK_YN', 'PAY_YN', 'RATES', 'TIME_RATES', 'ADD_RATES', 'ADD_TIME_RATES', 'ADDRESS', 'ROAD_ADDR', 'LNG', 'LAT'])
+#     hh = HiveCliHook()
+#     hh.load_df(df=cong_df,table='cong_prk',
+#                field_dict={
+#                             'AREA_NM' : 'STRING',
+#                             'PRK_NM' :'STRING',
+#                             'PRK_CD': 'INT',
+#                             'CPCTY' : 'INT',
+#                             'CUR_PRK_CNT' : 'INT',
+#                             'CUR_PRK_TIME' : 'TIMESTAMP',
+#                             'CUR_PRK_YN'  : 'STRING',
+#                             'PAY_YN' : 'STRING',
+#                             'RATES'  : 'INT',
+#                             'TIME_RATES' : 'INT',
+#                             'ADD_RATES' : 'INT',
+#                             'ADD_TIME_RATES': 'INT',
+#                             'ADDRESS' : 'STRING',
+#                             'ROAD_ADDR' : 'STRING',
+#                             'LNG' : 'DOUBLE',
+#                             'LAT' : 'DOUBLE'
+#                         })
  
 #데이터 전송
 i1 = PythonOperator(task_id='Insert.live',
