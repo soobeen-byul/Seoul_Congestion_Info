@@ -44,20 +44,23 @@ placeKey = [
             ]
 
 COL_TYPES = {
-            'live' : {  'AREA_NM' : 'STRING',
+            'live' : {  'AREA_CODE' : 'INT',
+                        'AREA_NM' : 'STRING',
                         'AREA_CONGEST_LVL' :'STRING',
                         'AREA_CONGEST_MSG' :'STRING',
                         'AREA_PPLTN_MIN' :'INT',
                         'AREA_PPLTN_MAX' :'INT',
                         'PPLTN_TIME' :'TIMESTAMP'},
 
-            'road' : {  'AREA_NM' : 'STRING',
+            'road' : {  'AREA_CODE' : 'INT',
+                        'AREA_NM' : 'STRING',
                         'ROAD_MSG' : 'STRING',
                         'ROAD_TRAFFIC_IDX' : 'STRING',
                         'ROAD_TRFFIC_TIME' : 'TIMESTAMP',
                         'ROAD_TRAFFIC_SPD' : 'INT'},
 
-            'wtr' : { 	'AREA_NM' : 'STRING',
+            'wtr' : { 	'AREA_CODE' : 'INT',
+                        'AREA_NM' : 'STRING',
                         'WEATHER_TIME' : 'TIMESTAMP',
                         'TEMP' : 'FLOAT',
                         'SENSIBLE_TEMP' :  'FLOAT',
@@ -77,7 +80,8 @@ COL_TYPES = {
                         'AIR_IDX_MAIN' :' STRING',
                         'AIR_MSG' : 'STRING'},
 
-            'prk' : {   'AREA_NM' : 'STRING',
+            'prk' : {   'AREA_CODE' : 'INT',
+                        'AREA_NM' : 'STRING',
                         'PRK_NM' :'STRING',
                         'PRK_CD': 'INT',
                         'CPCTY' : 'INT',
@@ -94,7 +98,8 @@ COL_TYPES = {
                         'LNG' : 'DOUBLE',
                         'LAT' : 'DOUBLE' },
 
-            'fcst24wtr' : {	'AREA_NM' : 'STRING',
+            'fcst24wtr' : {	'AREA_CODE' : 'INT',
+                            'AREA_NM' : 'STRING',
                             'FACST_DT' : 'INT',
                             'TEMP' : 'INT',
                             'PRECIPATAION' : 'STRING',
@@ -102,7 +107,8 @@ COL_TYPES = {
                             'RAIN_CHANCE' : 'INT',
                             'SKY_STTS' : 'STRING'},
 
-            'sub' : { 	'AREA_NM' : 'STRING',
+            'sub' : { 	'AREA_CODE' : 'INT',
+                        'AREA_NM' : 'STRING',
                         'SUB_STN_NM' : 'STRING',
                         'SUB_STN_LINE' : 'INT',
                         'SUB_STN_RADDR' : 'STRING',
@@ -139,6 +145,7 @@ def get_api(place):
     result = urlopen(url)  #7
     data = bs(result, 'lxml-xml')  #8
     AREA_NM=data.AREA_NM.text
+    AREA_CODE = placeKey.index(AREA_NM)
 
     LIVE_PPLTN_STTS=data.find('LIVE_PPLTN_STTS').LIVE_PPLTN_STTS #인구
     SUB_STTS = data.find('SUB_STTS') #지하철
@@ -148,6 +155,7 @@ def get_api(place):
     FCST24 = data.find('FCST24HOURS') #날씨 예보
 
     live_arr = [
+                AREA_CODE,
                 AREA_NM,
                 LIVE_PPLTN_STTS.AREA_CONGEST_LVL.text,
                 LIVE_PPLTN_STTS.AREA_CONGEST_MSG.text,
@@ -157,6 +165,7 @@ def get_api(place):
     ]
 
     road_arr = [
+                AREA_CODE,
                 AREA_NM,
                 ROAD.ROAD_MSG.text,
                 ROAD.ROAD_TRAFFIC_IDX.text,
@@ -172,6 +181,7 @@ def get_api(place):
       sub_arr=[]
       for i in SUB_STTS:
           tmp = [
+                AREA_CODE,
                 AREA_NM,
                 i.SUB_STN_NM.text,
                 i.SUB_STN_LINE.text,
@@ -186,6 +196,7 @@ def get_api(place):
       SUB_STTS=SUB_STTS.SUB_STTS
 
       sub_arr = [[
+                  AREA_CODE,
                   AREA_NM,
                   SUB_STTS.SUB_STN_NM.text,
                   SUB_STTS.SUB_STN_LINE.text,
@@ -196,6 +207,7 @@ def get_api(place):
       ]]
 
     wtr_arr = [
+                AREA_CODE,
                 AREA_NM,
                 WEATHER_STTS.WEATHER_TIME.text,
                 WEATHER_STTS.TEMP.text,
@@ -220,6 +232,7 @@ def get_api(place):
     prk_arr = []
     for i in PRK_STTS:
         tmp = [
+                AREA_CODE,
                 AREA_NM,
                 i.PRK_NM.text,
                 i.PRK_CD.text,
@@ -242,6 +255,7 @@ def get_api(place):
     fcst24_arr=[]
     for i in FCST24 :
         tmp = [
+                AREA_CODE,
                 AREA_NM,
                 i.FCST_DT.text,
                 i.TEMP.text,
@@ -264,9 +278,9 @@ def get_api(place):
     return result
 
 
-def print_data_size(**context):
-    DB_one = context['task_instance'].xcom_pull(task_ids='Get.api_data')
-    print(f"Completion of data collection for {len(DB_one)} place")
+# def print_data_size(**context):
+#     DB_one = context['task_instance'].xcom_pull(task_ids='Get.api_data')
+#     print(f"Completion of data collection for {len(DB_one)} place")
 
 def merge_data(**context):
     DB_one = context['task_instance'].xcom_pull(task_ids='Get.api_data')
@@ -300,20 +314,23 @@ def insert_data(*op_args,**context):
 
     col = COL_TYPES[group]
     col_names = list(col.keys())
-    result = context['task_instance'].xcom_pull(task_ids='Create.mergedDf')
 
+    result = context['task_instance'].xcom_pull(task_ids='Merge.place_data')
+
+    print(result)
+    
     cong_df = pd.DataFrame(result[group],columns=col_names)
 
     print(cong_df)
 
     hh = HiveCliHook(hive_cli_conn_id='hive_cli_connect')
-    hh.load_df(df=cong_df,table='cong_'+group,
+    hh.load_df(df=cong_df,table='raw_'+group,
                field_dict=col)
 
 
 # Define the BashOperator task
 init_tb = BashOperator(
-    task_id='Init.DBtable',
+    task_id='Init.table',
     bash_command=f"hive -f {HQL_PATH}/init_table.hql",
     dag=test_dag
 )                       
@@ -322,53 +339,59 @@ get_data = PythonOperator(task_id='Get.api_data',
                     python_callable=get_api_data,
                     dag=test_dag)
 
-check_data = PythonOperator(
-    task_id='Check.data',
-    python_callable=print_data_size,
-    dag=test_dag
-)
+# check_data = PythonOperator(
+#     task_id='Check.data',
+#     python_callable=print_data_size,
+#     dag=test_dag
+# )
 
-mergeDf = PythonOperator(task_id='Create.mergedDf',
+merge_data = PythonOperator(task_id='Merge.place_data',
                     python_callable=merge_data,
                     dag=test_dag,
                     trigger_rule='all_success')
 
  
 # 데이터 전송
-i1 = PythonOperator(task_id='Insert.live',
+i1 = PythonOperator(task_id='Update.raw_live',
                     python_callable=insert_data,
                     op_args=['live'],
                     dag=test_dag)
 
-i2 = PythonOperator(task_id='Insert.road',
+i2 = PythonOperator(task_id='Update.raw_road',
                     python_callable=insert_data,
                     op_args=['road'],
                     dag=test_dag)
 
 
-i3 = PythonOperator(task_id='Insert.weather',
+i3 = PythonOperator(task_id='Update.raw_weather',
                     python_callable=insert_data,
                     op_args=['wtr'],
                     dag=test_dag)
 
 
-i4 = PythonOperator(task_id='Insert.parking',
+i4 = PythonOperator(task_id='Update.raw_parking',
                     python_callable=insert_data,
                     op_args=['prk'],
                     dag=test_dag)
 
-i5 = PythonOperator(task_id='Insert.fcst24wtr',
+i5 = PythonOperator(task_id='Update.raw_fcst24wtr',
                     python_callable=insert_data,
                     op_args=['fcst24wtr'],
                     dag=test_dag)
 
-i6 = PythonOperator(task_id='Insert.subway',
+i6 = PythonOperator(task_id='Update.raw_subway',
                     python_callable=insert_data,
                     op_args=['sub'],
                     dag=test_dag)
 
+partition = BashOperator(
+    task_id='Create.partition_table',
+    bash_command=f"hive -f {HQL_PATH}/partition_table.hql",
+    dag=test_dag
+)  
 
-init_tb >> get_data >> check_data >> mergeDf >> [i1,i2,i3,i4,i5,i6]
+
+init_tb >> get_data >> merge_data >> [i1,i2,i3,i4,i5,i6]  >> partition
 
 
 
