@@ -5,15 +5,14 @@
 - 서울시 실시간 도시 데이터 api로부터 데이터를 전송받아 hive로 전송
 - DATA 원천 : https://data.seoul.go.kr/dataList/OA-21285/A/1/datasetView.do
 - 데이터 분류
-  
+
+  ```
   - 실시간 인구 현황
   - 도로 소통 현황
   - 주차장 현황
   - 지하철 실시간 도착 현황
   - 날씨 현황
   - 24시간 예보
-
-
 ## 📊 Ariflow Pipeline
 
 - **Init.table** : 테이블 초기화
