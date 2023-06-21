@@ -21,7 +21,8 @@
 - **Update.raw_** : 병합된 데이터를 hive로 전송하여 raw table 생성
 - **Create.partition_table** : 각각의 raw table에서 장소를 기준으로 partitioning
 
-![image](https://github.com/soobeen-byul/Seoul_Congestion_Info/assets/95599133/87e83cf1-a92b-451b-b38c-0740832f4a7c)
+![image](https://github.com/soobeen-byul/Seoul_Congestion_Info/assets/95599133/87c20d6c-0a15-43c1-9a5c-42646141a344)
+
 
 ## 🖥 기술 스택
 
