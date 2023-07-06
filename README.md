@@ -3,7 +3,7 @@
 
 ## 🔎 프로젝트 개요 
 - 서울시 실시간 도시 데이터 api로부터 데이터를 전송받아 hive로 전송
-- DATA 원천 : https://data.seoul.go.kr/dataList/OA-21285/A/1/datasetView.do
+- DATA 원천 : [서울시 열린데이터 광장](https://data.seoul.go.kr/dataList/OA-21285/A/1/datasetView.do)
 - 데이터 분류
 
   ```
